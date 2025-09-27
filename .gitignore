@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Private, local app properties ###
+application-dev.properties
