@@ -1,5 +1,6 @@
 package com.badger.multiplex.config;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -11,44 +12,33 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import com.badger.multiplex.service.AuthService;
-
 import java.util.List;
-
-import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private final AuthService authService;
+    private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
 
-    public SecurityConfig(AuthService authService) {
-        this.authService = authService;
+    @Autowired
+    public SecurityConfig(OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler) {
+        this.oAuth2LoginSuccessHandler = oAuth2LoginSuccessHandler;
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .cors(withDefaults())
-            .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(authorize -> authorize
-                // All endpoints are secured and require authentication
-                .anyRequest().authenticated()
+            .csrf(csrf -> csrf.disable()) // Disable CSRF for a stateless REST API
+            .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Enable CORS
+            .authorizeHttpRequests(auth -> auth
+                // /user/me will now be protected by a custom filter checking the JWT.
+                // For now, let's keep it simple and focus on the login flow.
+                .requestMatchers("/user/me").authenticated()
+                .anyRequest().permitAll() // Allow all other requests (like /oauth2/authorization/*)
             )
             .oauth2Login(oauth2 -> oauth2
-                .successHandler(
-                    (request, response, authentication) -> {
-                        // After successful login, save or update the user in the database
-                        authService.saveOrUpdateUser(authentication);
-                        // Redirect to a success page or API endpoint
-                        response.sendRedirect("/user/me");
-                    }
-                )
-            )
-            .logout(logout -> logout
-                .logoutSuccessHandler(logoutSuccessHandler())
-                .permitAll()
+                // CRITICAL: Configure the OAuth2 login process to use the custom success handler
+                .successHandler(oAuth2LoginSuccessHandler)
             );
 
         return http.build();
