@@ -38,7 +38,7 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             throws IOException, ServletException {
 
         // 1. Generate the JWT for the authenticated user
-        String jwt = tokenProvider.generateToken(authentication);
+        String jwt = tokenProvider.createToken(authentication);
 
         // 2. Build the final redirect URI with the JWT as a query parameter
         // The frontend will read this 'token' param.
