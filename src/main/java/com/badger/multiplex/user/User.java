@@ -3,15 +3,9 @@ package com.badger.multiplex.user;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Table(name = "users") // Renamed to avoid reserved keyword 'user' in some databases
-@Getter
-@Setter
-@NoArgsConstructor
 public class User {
 
     // The unique ID from the OAuth2 provider (e.g., Google's sub value)
@@ -25,10 +19,48 @@ public class User {
 
     private String email;
 
+    public User() {
+    }
+
+    // All-args constructor
     public User(String providerId, String provider, String name, String email) {
         this.providerId = providerId;
         this.provider = provider;
         this.name = name;
+        this.email = email;
+    }
+
+    // Explicit Getters and Setters (replaces @Getter and @Setter)
+
+    public String getProviderId() {
+        return providerId;
+    }
+
+    public void setProviderId(String providerId) {
+        this.providerId = providerId;
+    }
+
+    public String getProvider() {
+        return provider;
+    }
+
+    public void setProvider(String provider) {
+        this.provider = provider;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
         this.email = email;
     }
 }
