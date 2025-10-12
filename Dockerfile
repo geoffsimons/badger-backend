@@ -1,5 +1,5 @@
 # ----------------------------------------------------------------------
-# 1. BUILD STAGE: Use a full JDK image to compile and package the application
+# 1. BUILD STAGE: Used to compile the application and generate the JAR
 # ----------------------------------------------------------------------
 FROM maven:3.9-eclipse-temurin-21 AS builder
 WORKDIR /app
@@ -8,20 +8,20 @@ WORKDIR /app
 COPY pom.xml .
 COPY src /app/src
 
-# Package the application; -DskipTests is often used for faster builds
+# Package the application (skipping tests for a cleaner build)
 RUN mvn clean package -DskipTests
 
 # ----------------------------------------------------------------------
-# 2. FINAL STAGE: Use a lightweight JRE image for the final runtime
+# 2. FINAL STAGE: Lightweight JRE for runtime execution
 # ----------------------------------------------------------------------
 FROM eclipse-temurin:21-jre-jammy
 WORKDIR /app
 
-# Expose the application port defined in your Spring configuration (default is 8080)
-EXPOSE 8080 
+# Expose the port that the container will listen on (must match ALB target group port)
+EXPOSE 8080
 
-# Copy the generated JAR file from the build stage.
-# Replace 'your-app-name-1.0.0.jar' with the actual file name produced by 'mvn package'
+# Copy the generated executable JAR file from the builder stage
+# The 'target/*.jar' wildcard is useful to catch the full auto-generated name.
 COPY --from=builder /app/target/*.jar app.jar
 
 # Run the application
