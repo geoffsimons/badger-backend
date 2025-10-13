@@ -1,6 +1,7 @@
 package com.badger.multiplex.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -29,10 +30,12 @@ public class SecurityConfig {
     }
 
     @Bean
+    @ConditionalOnMissingBean(SecurityFilterChain.class)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable()) // Disable CSRF for a stateless REST API
             .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Enable CORS
+            .requiresChannel(channel -> channel.anyRequest().requiresSecure())
             .authorizeHttpRequests(auth -> auth
                 // Protected resource: The JWT filter will process the token for this endpoint
                 .requestMatchers("/user/me").authenticated()
