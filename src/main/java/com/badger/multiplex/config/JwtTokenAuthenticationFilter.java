@@ -27,6 +27,17 @@ public class JwtTokenAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+
+        // CRITICAL: Skip all paths related to the standard OAuth2 login flow.
+        // This allows Spring Security's OAuth filters to run without JWT interference.
+        return path.startsWith("/login") ||
+               path.startsWith("/oauth2") ||
+               path.startsWith("/error");
+    }
+
+    @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,

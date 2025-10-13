@@ -29,9 +29,8 @@ public class LocalSecurityConfig {
         this.corsConfigurationSource = corsConfigurationSource;
     }
 
-    // Set a high order to ensure this filter chain is processed BEFORE the default one.
     @Bean
-    @Order(1)
+    @Order(2)
     public SecurityFilterChain localSecurityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
