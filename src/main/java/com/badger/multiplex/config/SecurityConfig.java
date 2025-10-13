@@ -4,9 +4,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.channel.ChannelProcessingFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -29,25 +31,46 @@ public class SecurityConfig {
         this.jwtTokenAuthenticationFilter = jwtTokenAuthenticationFilter;
     }
 
+    // **Change the order of this chain to a high-priority (low-number) order**
     @Bean
+    @Order(1) // Run this chain first. It contains the OAuth2 login logic.
     @ConditionalOnMissingBean(SecurityFilterChain.class)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable()) // Disable CSRF for a stateless REST API
-            .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Enable CORS
-            .requiresChannel(channel -> channel.anyRequest().requiresSecure())
+            // ... (other config)
+            // **IMPORTANT:** Exclude the actuator path from this chain.
+            // This is only necessary if you had a different matcher, but let's be explicit
+            // to avoid issues if the Actuator chain is ever removed.
             .authorizeHttpRequests(auth -> auth
-                // Protected resource: The JWT filter will process the token for this endpoint
+                // This line is now CRITICAL to allow the OAuth2 endpoints to pass through.
+                // Spring Security 6+ will register the internal OAuth2 endpoints
+                // (/oauth2/authorization/*, /login/oauth2/code/*) to the chain that has .oauth2Login().
+                // .requestMatchers("/actuator/health").permitAll()
                 .requestMatchers("/user/me").authenticated()
-                .anyRequest().permitAll() // Allow all other requests (like /oauth2/authorization/*)
+                .anyRequest().permitAll()
             )
             .oauth2Login(oauth2 -> oauth2
-                // Use the custom handler to mint the JWT and redirect after Google login
                 .successHandler(oAuth2LoginSuccessHandler)
             )
-            // CRITICAL: Add the JWT filter to the chain
-            // It runs before the standard Spring Security filters to establish identity from the token.
             .addFilterBefore(jwtTokenAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
+
+    // **Change the order of this chain to a lower-priority (higher-number) order**
+    @Bean
+    @Order(2) // Run this chain second, only for actuator paths.
+    public SecurityFilterChain actuatorFilterChain(HttpSecurity http) throws Exception {
+
+        // 1. Configure Actuator Endpoints
+        http
+            .securityMatcher("/actuator/**") // Only apply this chain to /actuator/**
+            .csrf(csrf -> csrf.disable())
+
+            // 2. Authorize ALL requests on the Actuator path
+            .authorizeHttpRequests(authz -> authz
+                .anyRequest().permitAll()
+            );
 
         return http.build();
     }
