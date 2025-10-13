@@ -5,6 +5,9 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -19,6 +22,7 @@ import java.io.IOException;
  */
 @Component
 public class JwtTokenAuthenticationFilter extends OncePerRequestFilter {
+    private static final Logger logger = LoggerFactory.getLogger(JwtTokenAuthenticationFilter.class);
 
     private final JwtTokenProvider tokenProvider;
 
@@ -43,6 +47,8 @@ public class JwtTokenAuthenticationFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
 
+        String requestURI = request.getRequestURI();
+
         try {
             String jwt = getJwtFromRequest(request);
 
@@ -53,7 +59,8 @@ public class JwtTokenAuthenticationFilter extends OncePerRequestFilter {
             }
         } catch (Exception ex) {
             // This is non-critical; we just log and proceed without authentication
-            System.out.println("Could not set user authentication in security context: " + ex.getMessage());
+            logger.error("Could not set user authentication in security context: " + ex.getMessage(), ex);
+            logger.error("RequestURI: {}, jwt: {}", requestURI);
         }
 
         // Continue the filter chain

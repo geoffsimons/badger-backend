@@ -33,7 +33,7 @@ public class SecurityConfig {
     // **Change the order of this chain to a high-priority (low-number) order**
     @Bean
     @Order(2) // Must be last
-    @ConditionalOnMissingBean(SecurityFilterChain.class)
+    @ConditionalOnMissingBean(name = "localSecurityFilterChain") // Only create if local is not defined.
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable()) // Disable CSRF for a stateless REST API
@@ -48,6 +48,7 @@ public class SecurityConfig {
                 // This line is now CRITICAL to allow the OAuth2 endpoints to pass through.
                 // Spring Security 6+ will register the internal OAuth2 endpoints
                 // (/oauth2/authorization/*, /login/oauth2/code/*) to the chain that has .oauth2Login().
+                .requestMatchers("/login", "/error", "/oauth").permitAll()
                 .requestMatchers("/user/me").authenticated()
                 .anyRequest().authenticated()
             )
