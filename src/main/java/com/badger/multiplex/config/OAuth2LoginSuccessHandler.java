@@ -1,6 +1,8 @@
 package com.badger.multiplex.config;
 
 import com.badger.multiplex.jwt.JwtTokenProvider;
+import com.badger.multiplex.service.AuthService;
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -9,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -25,13 +28,15 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
     private static final Logger logger = LoggerFactory.getLogger(OAuth2LoginSuccessHandler.class);
 
     private final JwtTokenProvider tokenProvider;
+    private final AuthService authService;
 
     // Injects the success redirect URI defined in application.properties
     @Value("${app.oauth2.redirect-uri-success}")
     private String redirectUriSuccess;
 
-    public OAuth2LoginSuccessHandler(JwtTokenProvider tokenProvider) {
+    public OAuth2LoginSuccessHandler(JwtTokenProvider tokenProvider, AuthService authService) {
         this.tokenProvider = tokenProvider;
+        this.authService = authService;
     }
 
     /**
@@ -42,6 +47,9 @@ public class OAuth2LoginSuccessHandler extends SimpleUrlAuthenticationSuccessHan
             throws IOException, ServletException {
 
         logger.info("onAuthenticationSuccess, URI: {}", request.getRequestURI());
+
+        // Store the user in the db, or update the record with any name changes.
+        authService.saveOrUpdateUser(authentication);
 
         // 1. Generate the JWT for the authenticated user
         String jwt = tokenProvider.createToken(authentication);
