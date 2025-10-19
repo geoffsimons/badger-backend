@@ -63,12 +63,6 @@ public class LocalSecurityConfig {
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(corsConfigurationSource))
             .securityMatcher("/**")
-
-            // --- CRITICAL LOCAL OVERRIDE ---
-            // OVERRIDE: Allow HTTP for local testing
-            .requiresChannel(channel -> channel.anyRequest().requiresInsecure())
-            // --- CRITICAL LOCAL OVERRIDE ---
-
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/user/me").authenticated()
                 .anyRequest().permitAll()

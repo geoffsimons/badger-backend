@@ -65,11 +65,6 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable()) // Disable CSRF for a stateless REST API
             .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Enable CORS
             .securityMatcher("/**")
-            // This helps resolve the way the AWS LB works, but we do not want it for the actuator below.
-            .requiresChannel(channel -> channel.anyRequest().requiresSecure())
-            // **IMPORTANT:** Exclude the actuator path from this chain.
-            // This is only necessary if you had a different matcher, but let's be explicit
-            // to avoid issues if the Actuator chain is ever removed.
             .authorizeHttpRequests(auth -> auth
                 // This line is now CRITICAL to allow the OAuth2 endpoints to pass through.
                 // Spring Security 6+ will register the internal OAuth2 endpoints
